@@ -54,7 +54,12 @@ class customerGroup(customer):
 
 
 
-    
+    def calcHeatingCost(self):
+        print("Calc heating costs")
+
+    def shortTermPlanningCost(self):
+        #The main focus lies on the immediate expenses taking only the required investment for an asset, the capital cost, into account.
+        print("shortTermPlanningCost")
 
 
         
