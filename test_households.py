@@ -20,11 +20,14 @@ class TestHouseholds(unittest.TestCase):
 
     def setUp(self) -> None:
         print('setup')
-        self.housholdsGroup1 = Households(1)
-        self.dfDwellingCategories = pd.DataFrame(columns = ["DwellingType", "HeatingSystem", "NumberOfUnits"])
-        self.dfDwellingCategories["DwellingType"] = ["Detached house"]
-        self.dfDwellingCategories["HeatingSystem"] = ["Gas boiler"]
-        self.dfDwellingCategories["NumberOfUnits"] = [3]
+        dfDwellings = pd.DataFrame(columns = ["DwellingType", "HeatingSystem", "NumberOfUnits"])
+        dfDwellings["DwellingType"] = ["Detached house"]
+        dfDwellings["HeatingSystem"] = ["Gas boiler"]
+        dfDwellings["NumberOfUnits"] = [3]
+        dfHeatingProfiles = pd.DataFrame()
+
+        method = 'EAC'
+        self.housholdsGroup1 = Households(1, dfDwellings, dfHeatingProfiles, method)
         return super().setUp()
     
     def tearDown(self) -> None:
@@ -32,35 +35,47 @@ class TestHouseholds(unittest.TestCase):
         return super().tearDown()
 
 
-    def test_addDwellingCategories(self):
+    def test_importDwellingCategories(self):
         print('test importDwellingCategories')
-        
+
+        dfDwellings = pd.DataFrame(columns = ["DwellingType", "HeatingSystem", "NumberOfUnits"])
+        dfDwellings["DwellingType"] = ["Detached"]
+        dfDwellings["HeatingSystem"] = ["Gas"]
+        dfDwellings["NumberOfUnits"] = [-3]
+        dfHeatingProfiles = pd.DataFrame()
+
+        method = 'EAC'       
         # test raiseValue for dwelling type
-        self.dfDwellingCategories["DwellingType"] = ["Detached"]
+        # self.dfDwellingCategories["DwellingType"] = ["Detached"]
 
         with self.assertRaises(ValueError):
-            self.housholdsGroup1.importDwellingCategories(self.dfDwellingCategories)
+            housholdsGroup1 = Households(1, dfDwellings, dfHeatingProfiles, method)
 
-        # test raiseValue for heating system
-        self.dfDwellingCategories["HeatingSystem"] = ["Unknownheatingsystem"] #### wrong heating system value
+        # # test raiseValue for heating system
+        # self.dfDwellingCategories["HeatingSystem"] = ["Unknownheatingsystem"] #### wrong heating system value
 
-        with self.assertRaises(ValueError):
-            self.housholdsGroup1.importDwellingCategories(self.dfDwellingCategories)
+        # with self.assertRaises(ValueError):
+        #     self.housholdsGroup1.importDwellingCategories(self.dfDwellingCategories)
 
-        # test raiseValue for numberofUnit
-        self.dfDwellingCategories["NumberOfUnits"] = [-10000] #### wrong number of untis value
+        # # test raiseValue for numberofUnit
+        # self.dfDwellingCategories["NumberOfUnits"] = [-10000] #### wrong number of untis value
 
-        with self.assertRaises(ValueError):
-            self.housholdsGroup1.importDwellingCategories(self.dfDwellingCategories)
+        # with self.assertRaises(ValueError):
+        #     self.housholdsGroup1.importDwellingCategories(self.dfDwellingCategories)
 
     def test_calcHeatDemandByHeatingSystem(self):
         print('test calcHeatDemandByHeatingSystem')
-        self.housholdsGroup1.importDwellingCategories(self.dfDwellingCategories)
 
         # Test that the keys and values of the dict returned
-        self.assertSetEqual(set(map(type, self.housholdsGroup1.calcHeatDemandByHeatingSystem.values())), {int})
-        self.assertIn("Gas boiler", self.housholdsGroup1.calcHeatDemandByHeatingSystem)
-        self.assertEqual(self.housholdsGroup1.calcHeatDemandByHeatingSystem["Gas boiler"], 45000)
+        self.assertSetEqual(set(map(type, self.housholdsGroup1.calcHeatDemandByHeatingSystem().values())), {int})
+        self.assertIn("Gas boiler", self.housholdsGroup1.calcHeatDemandByHeatingSystem())
+        self.assertEqual(self.housholdsGroup1.calcHeatDemandByHeatingSystem()["Gas boiler"], 45000)
+
+
+    # def test_calcDwellingCategoryCost(self):
+    #     dwelling1 = self.housholdsGroup1.listDwellingCategories[0]
+    #     timeHorizon=0
+    #     self.housholdsGroup1.calcDwellingCategoryCost(dwelling1, timeHorizon)
         
         
 
