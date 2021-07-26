@@ -1,0 +1,17 @@
+,Average energy efficiency improvements costs (GBP),CURRENT_ENERGY_EFFICIENCY,POTENTIAL_ENERGY_EFFICIENCY,Average heat demand after energy efficiency measures (kWh),Average heat demand before energy efficiency measures (kWh),NumberOfUnits,DwellingType,HeatingSystem
+0,5212.0,39.0,70.0,16648.0,28567.0,6850.0,Detached house,Biomass boiler
+1,4120.0,61.0,80.0,13228.0,19258.0,177827.0,Detached house,Gas boiler
+2,6458.0,48.0,72.0,19252.0,30071.0,57768.0,Detached house,Oil boiler
+3,5296.0,36.0,64.0,6110.0,10277.0,7113.0,Detached house,Resistance heating
+4,2668.0,50.0,67.0,5252.0,8181.0,713.0,Flat,Biomass boiler
+5,1389.0,67.0,75.0,6584.0,8772.0,99924.0,Flat,Gas boiler
+6,2899.0,57.0,67.0,6577.0,9726.0,1986.0,Flat,Oil boiler
+7,1700.0,54.0,67.0,2367.0,3451.0,33092.0,Flat,Resistance heating
+8,4551.0,45.0,72.0,8499.0,13476.0,7364.0,Semi-detached house,Biomass boiler
+9,3572.0,61.0,82.0,10503.0,15138.0,290148.0,Semi-detached house,Gas boiler
+10,5388.0,51.0,75.0,12959.0,20906.0,19310.0,Semi-detached house,Oil boiler
+11,5060.0,40.0,67.0,4257.0,6978.0,8087.0,Semi-detached house,Resistance heating
+12,4566.0,44.0,70.0,8401.0,13426.0,4865.0,Terraced house,Biomass boiler
+13,2862.0,61.0,82.0,9534.0,13908.0,292264.0,Terraced house,Gas boiler
+14,4445.0,55.0,77.0,9819.0,14779.0,5926.0,Terraced house,Oil boiler
+15,4817.0,41.0,65.0,4323.0,6662.0,8219.0,Terraced house,Resistance heating
