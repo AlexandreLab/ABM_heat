@@ -7,7 +7,7 @@ import os
 
 ## to use with anaconda:
 # launch anaconda terminal
-# type: code to launch VScode
+# type: code -- to launch VScode
 
 
 # Model of the residential building stock
@@ -136,32 +136,33 @@ class Households():
     def tryEnergyEfficiencyImprovements(self, dwelling, timeHorizon):
         print('Looking to improve the energy efficiency of this dwelling... ')
 
-        if dwelling.energyEfficiencyTurnOver > 0:
+        if dwelling.listEnergyEfficiencyTurnOver[0] > 0: #number of dwellings that are eligible to have their EE improved
 
             maxPercentageSaving = 0
-            for percentageSaving in [1.0]: #possible range of energy efficiency improvements [0.5, 0.8, 1.0] ==> 50%, 80% and 100%
+            for percentageSaving in [1]: #possible range of energy efficiency improvements [0.5, 0.8, 1.0] ==> 50%, 80% and 100% (not fully tested with efficiency improvement below 100%)
 
                 EACmeasures, opexSaved = dwelling.calcCostEnergyEfficiencyImprovements(percentageSaving, self.discountRate, self.currentYear, self.fuelPrices, timeHorizon, self.method)
                 if opexSaved - EACmeasures >= 0 and opexSaved>0 and EACmeasures>0:
                     maxPercentageSaving = percentageSaving
 
-
-
             newDwellingNumber = 0
             incentives = 0
             if maxPercentageSaving > 0: #Implement the energy efficiency improvements, no incentives/grants required
-                newDwellingNumber = dwelling.energyEfficiencyTurnOver
+                newDwellingNumber = dwelling.listEnergyEfficiencyTurnOver[0]
             else:
                 # Energy efficiency improvements are too expensive, incentives/grants from the governement are required to reach the target
                 if maxPercentageSaving == 0 and dwelling.pastEnergyEfficiencyImprovements == 0 and dwelling.listEnergyEfficiencyTarget[0]>0:
                     print('Calculate amount of help from governement required')
                     NPVmeasures, opexSaved = dwelling.calcCostEnergyEfficiencyImprovements(1.0, self.discountRate, self.currentYear, self.fuelPrices, timeHorizon, "NPV")
                     if NPVmeasures<0:
-                        newDwellingNumber = dwelling.listEnergyEfficiencyTarget[0]
+                        if dwelling.listEnergyEfficiencyTarget[0]>dwelling.listEnergyEfficiencyTurnOver[0]:
+                            newDwellingNumber = dwelling.listEnergyEfficiencyTurnOver[0]
+                        else:
+                            newDwellingNumber = dwelling.listEnergyEfficiencyTarget[0]
                         maxPercentageSaving = 1.0
                         incentives = -NPVmeasures
 
-            if newDwellingNumber>0:
+            if newDwellingNumber > 0:
                 newDwelling = self.createNewDwelling(dwelling,newDwellingNumber , True) 
 
                 print('A new dwelling category is created: {0} with a {1}, created in year {2:d}'.format(newDwelling.dwellingType, newDwelling.heatingSystem.name, newDwelling.creationYear))
@@ -192,17 +193,19 @@ class Households():
 
     def tryChangingHeatingSystem(self, dwelling, timeHorizon): #timHorizon only used for the NPV calculations
         print('Looking to change the heating system of this dwelling... ')
-        if dwelling.heatingSystemTurnOver > 0:
+        if dwelling.listHeatingSystemTurnOver[0] > 0:
+            newDwellingNumber = dwelling.listHeatingSystemTurnOver[0]
             if dwelling.heatingSystemFlag:
 
                 keyCheaperHeatingSystem = dwelling.getCheapestNewHeatingSystem(self.dictHeatingSystems, self.discountRate, self.currentYear, self.fuelPrices, timeHorizon, self.method)
 
                 #Look at replacing the current heating systemName with a cheaper option
                 if keyCheaperHeatingSystem>=0:
+                    
                     newHeatingSystem = self.dictHeatingSystems[keyCheaperHeatingSystem]
                     #print('The best heating system identified is: {0}'.format(newHeatingSystem.name))
-
-                    newDwelling = self.createNewDwelling(dwelling, dwelling.heatingSystemTurnOver, False) 
+                    
+                    newDwelling = self.createNewDwelling(dwelling, newDwellingNumber, False) 
                     newDwelling.heatingSystem = newHeatingSystem #changing the heating systemName of the new dwelling category
                     newDwelling.updateCumulativeCost(newDwelling.numberOfUnit, self.discountRate, self.currentYear) # Add CAPEX costs to the cumulative costs
                     newDwelling.previousHeatingSystem = dwelling.heatingSystem
@@ -214,10 +217,10 @@ class Households():
                     print('The current heating system is the cheapest option')
                     # The current heating system is the cheapest. The lifespan of a share of the dwelling has ended thus their heating systems need to be replaced
                     # the CAPEX costs of the current heating systems is added to the cumulative costs
-                    dwelling.updateCumulativeCost(dwelling.heatingSystemTurnOver, self.discountRate, self.currentYear)
+                    dwelling.updateCumulativeCost(newDwellingNumber, self.discountRate, self.currentYear)
             else:
                 print('The dwelling is not eligible to change to another heating system.')
-                dwelling.updateCumulativeCost(dwelling.heatingSystemTurnOver, self.discountRate, self.currentYear)
+                dwelling.updateCumulativeCost(newDwellingNumber, self.discountRate, self.currentYear)
 
         else:
             print('There is no dwelling ready to switch to another heating system.')
@@ -274,7 +277,7 @@ if __name__ == '__main__':
 
     method = 'EAC'
 
-    # Extracing electricity for heat profiles for ASHP, GSHP and resistance heater
+    # Extracting electricity for heat profiles for ASHP, GSHP and resistance heater
     dfHeatingProfiles = pd.read_csv('HeatingSystemsProfiles/Half-hourly_profiles_of_heating_technologies.csv', index_col=0, parse_dates=True)
     elec_cols = [c for c in dfHeatingProfiles.columns if "_elec" in c]
     dfHeatingProfiles = dfHeatingProfiles[elec_cols]
@@ -306,7 +309,7 @@ if __name__ == '__main__':
     dfFuelPrices.columns = dfFuelPrices.columns.astype(int)
     
     
-    for year in range(2018, 2020, 1): #dfFuelPrices.columns[-1]
+    for year in range(2018, 2035, 1): #dfFuelPrices.columns[-1]
         print('-----------------------------------------------')
         print('year: {0}'.format(year))
         print('-----------------------------------------------')
@@ -326,13 +329,13 @@ if __name__ == '__main__':
             print('EE targets:')
             print(d.listEnergyEfficiencyTarget, np.sum(d.listEnergyEfficiencyTarget))
             # Try to improve the energy efficiency of dwellings first
-            #average lfietime of energy efficiency measures is assumed to be 15 years
-            print(d.listEnergyEfficiencyTurnOver, np.sum(d.listEnergyEfficiencyTurnOver), d.energyEfficiencyTurnOver)
+            #average lifetime of energy efficiency measures is assumed to be 15 years
+            print(d.listEnergyEfficiencyTurnOver, np.sum(d.listEnergyEfficiencyTurnOver))
             housholdsGroup1.tryEnergyEfficiencyImprovements(d, 15)
 
             # Try to change the heating systems of dwellings next
             print('{0} with a {1}, created in year {2:d}'.format(d.dwellingType, d.heatingSystem.name, d.creationYear))
-            print(d.listHeatingSystemTurnOver, np.sum(d.listHeatingSystemTurnOver), d.heatingSystemTurnOver)
+            print(d.listHeatingSystemTurnOver, np.sum(d.listHeatingSystemTurnOver))
             value = housholdsGroup1.tryChangingHeatingSystem(d, 5)
 
             #print(d.listEnergyEfficiencyTurnOver, np.sum(d.listEnergyEfficiencyTurnOver), d.energyEfficiencyTurnOver)

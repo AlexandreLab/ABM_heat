@@ -54,6 +54,7 @@ class TestDwellingCategory(unittest.TestCase):
         self.assertEqual(round(self.newDwelling.calcNPVEnergyEfficiency(1500, 100, 0.07, 6), 0), -923)
 
         
+        
 
 if __name__ == '__main__':
     unittest.main()

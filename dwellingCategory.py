@@ -30,15 +30,13 @@ class DwellingCategory():
         self.initialAvgAnnualHeatDemand = self.currentAvgAnnualHeatDemand
         self.kWhByEPCrating = (self.initialAvgAnnualHeatDemand-self.potentialAvgAnnualHeatDemand)/(self.potentialEPCRating-self.currentEPCRating) # heat demand savings (kWh) by EPC points
 
-        self.listHeatingSystemTurnOver = self.initialiseList(self.numberOfUnit, self.heatingSystem.lifespan) # For dwellings in 2018, the heating systems are assumed to have been installed lienarly
-        self.listEnergyEfficiencyTurnOver = self.shiftList(self.listHeatingSystemTurnOver) 
+        self.listHeatingSystemTurnOver = self.initialiseList(self.numberOfUnit, self.heatingSystem.lifespan) # For dwellings in 2018, the heating systems are assumed to have been installed linearly
+        self.listEnergyEfficiencyTurnOver = self.shiftList(self.listHeatingSystemTurnOver) # number of dwellings eligible for EE measures every year
 
         self.listEnergyEfficiencyTarget = self.initialiseList(self.numberOfUnit, (2035-2018)) #by 2035 all the dwellings need to reach their potential EPC
         self.listHeatingSystemTarget = self.initialiseList(self.numberOfUnit, (2050-2018)) #by 2050 all the dwellings need to use low carbon heating technology
 
-        self.heatingSystemTurnOver = self.listHeatingSystemTurnOver[0]
-        self.energyEfficiencyTurnOver = self.listEnergyEfficiencyTurnOver[0] # try to improve the efficiency of dwellings that will be able to change their heating system one year in advance
-        self.heatingSystemFlag = self.getHeatingSystemFlag()
+        self.heatingSystemFlag = self.getHeatingSystemFlag() #True if the dwelling is eligible to change its heating system
 
         self.dwellingCategoryCostCurve = CostCurve(costEEImprovements/(self.currentAvgAnnualHeatDemand-self.potentialAvgAnnualHeatDemand), "linear")
 
@@ -104,14 +102,6 @@ class DwellingCategory():
         self.listHeatingSystemTarget[1] = self.listHeatingSystemTarget[1] - value
 
     @property
-    def heatingSystemTurnOver(self):
-        return self._heatingSystemTurnOver
-
-    @heatingSystemTurnOver.setter
-    def heatingSystemTurnOver(self, value):
-        self._heatingSystemTurnOver = value
-
-    @property
     def numberOfUnit(self):
         return self._numberOfUnit
 
@@ -131,8 +121,6 @@ class DwellingCategory():
         self.listEnergyEfficiencyTurnOver = self.shiftList(self.listEnergyEfficiencyTurnOver) 
         self.listEnergyEfficiencyTarget = self.shiftList(self.listEnergyEfficiencyTarget) 
         self.listHeatingSystemTarget = self.shiftList(self.listHeatingSystemTarget) 
-        self.heatingSystemTurnOver = self.listHeatingSystemTurnOver[0]
-        self.energyEfficiencyTurnOver = self.listEnergyEfficiencyTurnOver[0]
 
     @property
     def currentOPEX(self):
