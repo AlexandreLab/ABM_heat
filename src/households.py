@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import copy
 import os
+from pathlib import Path
 
 ## to use with anaconda:
 # launch anaconda terminal
@@ -13,7 +14,7 @@ import os
 # Model of the residential building stock
 class Households():
     def __init__(self,busbar, dfDwellingsCategories, dfHeatingSystems, dfElectricityForHeatProfiles, method):
-        
+
         self.dfElectricityForHeatProfiles = dfElectricityForHeatProfiles #dataframe of half-hourly profiles for resistance heater, ASHPs, GSHPs, etc.
         self.discountRate = 0.07
         self.listValidHeatingSystems = ["Gas boiler", "ASHP", "GSHP", "Resistance heating", "Oil boiler", "Biomass boiler"]
@@ -47,10 +48,10 @@ class Households():
         # dictCAPEXheating = {"Gas boiler": 3000, "ASHP": 10000, "Resistance heater": 2500,} #£
         # dictEfficiencyHeat = {"Gas boiler": 0.9, "ASHP": 2.5, "Resistance heater": 1} #£
         # fuelHeatingSystems = {"Gas boiler": "ngas", "Resistance heater": "electricity", "ASHP":"electricity"}
-        
+
         dictHeatingSystems = {}
         for ii, row in dfHeatingSystems.iterrows():
-            
+
             print(ii, row)
             heatingSystem = row["Technology"]
             fuel = row["Main fuel"].lower()
@@ -75,7 +76,7 @@ class Households():
             if s.name == heatingSystemName and s.targetDwelling == dwellingType:
                 currentHeatingSystem = s
                 successfulSearch = True
-        
+
         print(successfulSearch)
         return currentHeatingSystem
 
@@ -163,7 +164,7 @@ class Households():
                         incentives = -NPVmeasures
 
             if newDwellingNumber > 0:
-                newDwelling = self.createNewDwelling(dwelling,newDwellingNumber , True) 
+                newDwelling = self.createNewDwelling(dwelling,newDwellingNumber , True)
 
                 print('A new dwelling category is created: {0} with a {1}, created in year {2:d}'.format(newDwelling.dwellingType, newDwelling.heatingSystem.name, newDwelling.creationYear))
                 print('     It has {0:d} units.'.format(newDwelling.numberOfUnit))
@@ -182,7 +183,7 @@ class Households():
         orgDwelling.numberOfUnit = max([int(round(orgDwelling.numberOfUnit-numberNewDwelling,0)), 0]) # updating the number of unit
 
         if EEimprovements:
-            
+
             orgDwelling.updateListsAfterEEImprovements(numberNewDwelling)
             newDwelling.setListsAfterEEImprovements(numberNewDwelling)
         else:
@@ -201,11 +202,11 @@ class Households():
 
                 #Look at replacing the current heating systemName with a cheaper option
                 if keyCheaperHeatingSystem>=0:
-                    
+
                     newHeatingSystem = self.dictHeatingSystems[keyCheaperHeatingSystem]
                     #print('The best heating system identified is: {0}'.format(newHeatingSystem.name))
-                    
-                    newDwelling = self.createNewDwelling(dwelling, newDwellingNumber, False) 
+
+                    newDwelling = self.createNewDwelling(dwelling, newDwellingNumber, False)
                     newDwelling.heatingSystem = newHeatingSystem #changing the heating systemName of the new dwelling category
                     newDwelling.updateCumulativeCost(newDwelling.numberOfUnit, self.discountRate, self.currentYear) # Add CAPEX costs to the cumulative costs
                     newDwelling.previousHeatingSystem = dwelling.heatingSystem
@@ -213,7 +214,7 @@ class Households():
                     self.listDwellingCategories.append(newDwelling)
                     print('A new dwelling category is created: {0} with a {1}, created in year {2:d}'.format(newDwelling.dwellingType, newDwelling.heatingSystem.name, newDwelling.creationYear))
                     print('     {0:,d} {1}s with {2}s are switching to {3}s'.format(newDwelling.numberOfUnit, dwelling.dwellingType, dwelling.heatingSystem.name, newHeatingSystem.name))
-                else: 
+                else:
                     print('The current heating system is the cheapest option')
                     # The current heating system is the cheapest. The lifespan of a share of the dwelling has ended thus their heating systems need to be replaced
                     # the CAPEX costs of the current heating systems is added to the cumulative costs
@@ -228,7 +229,7 @@ class Households():
 
     def getElectricityForHeatProfile(self):
         dictHeatDemand = self.calcHeatDemandByHeatingSystem()
-        tempProfiles = self.dfElectricityForHeatProfiles.copy() 
+        tempProfiles = self.dfElectricityForHeatProfiles.copy()
         for k,v in dictHeatDemand.items():
             if k in tempProfiles.columns:
                 tempProfiles[k] = tempProfiles[k] * v
@@ -245,7 +246,7 @@ class Households():
         return numberOfDwellings
 
     def calcEndOfYear(self):
-        
+
         for ii,d in enumerate(self.listDwellingCategories):
             d.calcCurrentOPEX(self.fuelPrices,self.discountRate, self.currentYear)
             d.incrementCumulativeCost()
@@ -266,7 +267,7 @@ class Households():
             tempResults.loc[ii, "Heat_demand_[kWh]"] = d.totalAnnualHeatDemand()
             tempResults.loc[ii, "EPC_rating"] = d.currentEPCRating
             tempResults.loc[ii, "Cumulative_incentives_[£]"] = d.avgCumulativeAmountOfIncentivesReceived
-        
+
         tempResults = tempResults.groupby(["Year", "Heating_system", "Dwelling_type", "EPC_rating"]).sum().reset_index()
 
         self.results = pd.concat([self.results, tempResults], axis=0)
@@ -278,79 +279,93 @@ if __name__ == '__main__':
     method = 'EAC'
 
     # Extracting electricity for heat profiles for ASHP, GSHP and resistance heater
-    dfHeatingProfiles = pd.read_csv('./data/HeatingSystemsProfiles/Half-hourly_profiles_of_heating_technologies.csv', index_col=0, parse_dates=True)
+    dfHeatingProfiles = pd.read_csv(
+        './data/HeatingSystemsProfiles/Half-hourly_profiles_of_heating_technologies.csv',
+        index_col=0,
+        parse_dates=True)
     elec_cols = [c for c in dfHeatingProfiles.columns if "_elec" in c]
     dfHeatingProfiles = dfHeatingProfiles[elec_cols]
-    dfHeatingProfiles.columns = [c.replace('Normalised_', '').replace('_', ' ').replace('elec','') for c in dfHeatingProfiles.columns]
-
-
-
+    dfHeatingProfiles.columns = [
+        c.replace('Normalised_', '').replace('_', ' ').replace('elec', '')
+        for c in dfHeatingProfiles.columns
+    ]
 
     #data about the residential sector
-    path_input_data = r"C:\Users\sceac10\OneDrive - Cardiff University\04 - Projects\18 - ABM\01 - Code\ABM_MISSION\data\ResidentialHeatSectorData"
+
+    path_input_data = "./data/ResidentialHeatSectorData"
     file = "input_data.csv"
 
-    
-
-    dfDwellings =pd.read_csv(path_input_data+os.path.sep+file)
-
+    dfDwellings = pd.read_csv(path_input_data + os.path.sep + file)
 
     #import heating systems parameters and costs
     path_heating_data = r"D:\OneDrive - Cardiff University\04 - Projects\03 - PhD\03 - Analysis\11 - Optimisation"
     file = "technology_dataset - optimisation.xlsx"
-    dfHeating = pd.read_excel(path_heating_data+os.path.sep+file, sheet_name="Individual_tech")
-    dfHeating = dfHeating.loc[dfHeating["Set"]=="2050 set", :]
-    dfHeating["Dwelling type"] =[c.capitalize() +" house" if "Flat" not in c.capitalize() else c for c in dfHeating["Dwelling type"]]
+    dfHeating = pd.read_excel(path_heating_data + os.path.sep + file,
+                              sheet_name="Individual_tech")
+    dfHeating = dfHeating.loc[dfHeating["Set"] == "2050 set", :]
+    dfHeating["Dwelling type"] = [
+        c.capitalize() + " house" if "Flat" not in c.capitalize() else c
+        for c in dfHeating["Dwelling type"]
+    ]
 
-    housholdsGroup1 = Households(1, dfDwellings, dfHeating, dfHeatingProfiles, method)
+    housholdsGroup1 = Households(1, dfDwellings, dfHeating, dfHeatingProfiles,
+                                 method)
 
     #import fuel prices data from https://www.gov.uk/government/publications/updated-energy-and-emissions-projections-2019
     file = "fuel_prices.csv"
-    dfFuelPrices = pd.read_csv(path_input_data+os.path.sep+file, index_col=0)
+    dfFuelPrices = pd.read_csv(path_input_data + os.path.sep + file,
+                               index_col=0)
 
     dfFuelPrices.columns = dfFuelPrices.columns.astype(int)
-    
-    
-    for year in range(2018, 2035, 1): #dfFuelPrices.columns[-1]
+
+    for year in range(2018, 2035, 1):  #dfFuelPrices.columns[-1]
         print('-----------------------------------------------')
         print('year: {0}'.format(year))
         print('-----------------------------------------------')
-        tempFuelPrices = {'electricity': dfFuelPrices.loc["electricity", year]/100, 
-                        'ngas':dfFuelPrices.loc["ngas", year]/100, 
-                        'biomass':dfFuelPrices.loc["biomass", year]/100, 
-                        'oil':dfFuelPrices.loc["oil", year]/100, 
-                        } # converted to £/kWh
+        tempFuelPrices = {
+            'electricity': dfFuelPrices.loc["electricity", year] / 100,
+            'ngas': dfFuelPrices.loc["ngas", year] / 100,
+            'biomass': dfFuelPrices.loc["biomass", year] / 100,
+            'oil': dfFuelPrices.loc["oil", year] / 100,
+        }  # converted to £/kWh
         housholdsGroup1.fuelPrices = tempFuelPrices
         print(housholdsGroup1.fuelPrices)
-        numberOfDwellingCategories = len(housholdsGroup1.listDwellingCategories)
+        numberOfDwellingCategories = len(
+            housholdsGroup1.listDwellingCategories)
         for ii in range(0, numberOfDwellingCategories):
-            d = housholdsGroup1.listDwellingCategories[ii]  
+            d = housholdsGroup1.listDwellingCategories[ii]
             print('*******')
 
-            print('{0} with a {1}, created in year {2:d}'.format(d.dwellingType, d.heatingSystem.name, d.creationYear))
+            print('{0} with a {1}, created in year {2:d}'.format(
+                d.dwellingType, d.heatingSystem.name, d.creationYear))
             print('EE targets:')
-            print(d.listEnergyEfficiencyTarget, np.sum(d.listEnergyEfficiencyTarget))
+            print(d.listEnergyEfficiencyTarget,
+                  np.sum(d.listEnergyEfficiencyTarget))
             # Try to improve the energy efficiency of dwellings first
             #average lifetime of energy efficiency measures is assumed to be 15 years
-            print(d.listEnergyEfficiencyTurnOver, np.sum(d.listEnergyEfficiencyTurnOver))
+            print(d.listEnergyEfficiencyTurnOver,
+                  np.sum(d.listEnergyEfficiencyTurnOver))
             housholdsGroup1.tryEnergyEfficiencyImprovements(d, 15)
 
             # Try to change the heating systems of dwellings next
-            print('{0} with a {1}, created in year {2:d}'.format(d.dwellingType, d.heatingSystem.name, d.creationYear))
-            print(d.listHeatingSystemTurnOver, np.sum(d.listHeatingSystemTurnOver))
+            print('{0} with a {1}, created in year {2:d}'.format(
+                d.dwellingType, d.heatingSystem.name, d.creationYear))
+            print(d.listHeatingSystemTurnOver,
+                  np.sum(d.listHeatingSystemTurnOver))
             value = housholdsGroup1.tryChangingHeatingSystem(d, 5)
 
             #print(d.listEnergyEfficiencyTurnOver, np.sum(d.listEnergyEfficiencyTurnOver), d.energyEfficiencyTurnOver)
             #print(d.listHeatingSystemTurnOver, np.sum(d.listHeatingSystemTurnOver), d.heatingSystemTurnOver)
-            
+
         housholdsGroup1.calcNumberOfDwellings()
         housholdsGroup1.calcEndOfYear()
         housholdsGroup1.cleanListDwellingCategories()
         housholdsGroup1.storeResults(year)
-    
+
     print(housholdsGroup1.results)
     path_save = r'D:\OneDrive - Cardiff University\04 - Projects\18 - ABM\01 - Code\Results_for_notebooks'
-    housholdsGroup1.results.to_csv(path_save+os.path.sep+"resultsSouthWales.csv")
+    housholdsGroup1.results.to_csv(path_save + os.path.sep +
+                                   "resultsSouthWales.csv")
 
 
 def test_function():
@@ -361,7 +376,7 @@ def test_function():
     housholdsGroup1 = Households(1, dfDwellings, dfHeatingProfiles, method)
 
     dictFuelPrices = {
-        'electricity': {2018: 0.17, 2019: 0.2, 2020:0.2, 2021:0.2, 2022:0.2, 2023:0.2}, 
+        'electricity': {2018: 0.17, 2019: 0.2, 2020:0.2, 2021:0.2, 2022:0.2, 2023:0.2},
         'ngas': {2018: 0.04, 2019: 0.08, 2020:0.16, 2021:0.32, 2022:0.32, 2023:0.32}
         }
 
@@ -381,7 +396,7 @@ def test_function():
         print(housholdsGroup1.fuelPrices)
         numberOfDwellingCategories = len(housholdsGroup1.listDwellingCategories)
         for ii in range(0, numberOfDwellingCategories):
-            d = housholdsGroup1.listDwellingCategories[ii]  
+            d = housholdsGroup1.listDwellingCategories[ii]
             print('*******')
 
             print('{0} with a {1}, created in year {2:d}'.format(d.dwellingType, d.heatingSystem.name, d.creationYear))
@@ -398,7 +413,7 @@ def test_function():
 
             print(d.listEnergyEfficiencyTurnOver, np.sum(d.listEnergyEfficiencyTurnOver), d.energyEfficiencyTurnOver)
             print(d.listHeatingSystemTurnOver, np.sum(d.listHeatingSystemTurnOver), d.heatingSystemTurnOver)
-            
+
         housholdsGroup1.calcNumberOfDwellings()
         housholdsGroup1.calcEndOfYear()
         housholdsGroup1.cleanListDwellingCategories()
@@ -406,7 +421,7 @@ def test_function():
 
     #print(housholdsGroup1.results)
 
-    #Year 2: Looking at replacing the heating systems  
+    #Year 2: Looking at replacing the heating systems
     # for d in housholdsGroup1.listDwellingCategories:
     #     value = housholdsGroup1.calcDwellingCategoryCost(d, "EAC")
 
@@ -414,7 +429,7 @@ def test_function():
 
     #Create the electricity for heat profiles to be added to the 2018 electricity demand
     # print(housholdsGroup1.getElectricityForHeatProfile())
-    
+
     print(housholdsGroup1.results)
     path_save = r'D:\OneDrive - Cardiff University\04 - Projects\18 - ABM\01 - Code\Results_for_notebooks'
     housholdsGroup1.results.to_csv(path_save+os.path.sep+"results.csv")
