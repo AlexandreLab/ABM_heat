@@ -298,9 +298,8 @@ if __name__ == '__main__':
     dfDwellings = pd.read_csv(path_input_data + os.path.sep + file)
 
     #import heating systems parameters and costs
-    path_heating_data = r"D:\OneDrive - Cardiff University\04 - Projects\03 - PhD\03 - Analysis\11 - Optimisation"
     file = "technology_dataset - optimisation.xlsx"
-    dfHeating = pd.read_excel(path_heating_data + os.path.sep + file,
+    dfHeating = pd.read_excel(path_input_data + os.path.sep + file,
                               sheet_name="Individual_tech")
     dfHeating = dfHeating.loc[dfHeating["Set"] == "2050 set", :]
     dfHeating["Dwelling type"] = [
@@ -363,7 +362,7 @@ if __name__ == '__main__':
         housholdsGroup1.storeResults(year)
 
     print(housholdsGroup1.results)
-    path_save = r'D:\OneDrive - Cardiff University\04 - Projects\18 - ABM\01 - Code\Results_for_notebooks'
+    path_save = r'./Results'
     housholdsGroup1.results.to_csv(path_save + os.path.sep +
                                    "resultsSouthWales.csv")
 
